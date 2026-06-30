@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Peace Talk Demo - Culture & Signal</title>
+<style>
+  :root{
+    --blue:#1f5fbf;--bg:#eef5ff;--card:#ffffff;--text:#102033;--muted:#667085;
+    --green:#22c55e;--yellow:#facc15;--red:#ef4444;--gray:#94a3b8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text)}
+  header{padding:18px 22px;background:linear-gradient(135deg,#1554b7,#53a7ff);color:white;display:flex;gap:12px;align-items:center}
+  header h1{margin:0;font-size:30px} header p{margin:4px 0 0;font-size:14px;opacity:.95}
+  .layout{display:grid;grid-template-columns:270px 1fr 310px;gap:16px;padding:16px;height:calc(100vh - 78px)}
+  .panel,.chatBox{background:var(--card);border-radius:22px;box-shadow:0 10px 28px rgba(25,60,110,.12);padding:16px;overflow:auto}
+  .panel h2{font-size:18px;margin:0 0 12px}.label{font-weight:700;font-size:14px;margin:14px 0 8px;color:#344054}
+  select,input,button{font:inherit}
+  select{width:100%;padding:12px;border:2px solid #d5e3f7;border-radius:14px;background:white;font-size:15px}
+  .status{border-radius:18px;padding:18px;text-align:center;margin-bottom:14px;background:#f8fafc;border:2px solid #e2e8f0}
+  .light{font-size:70px;line-height:1;margin:8px 0}.badge{display:inline-block;padding:8px 13px;border-radius:999px;font-weight:800;font-size:14px;background:#eef2ff;color:#1d4ed8}
+  .reason{font-size:14px;color:#475467;line-height:1.5;background:#f8fafc;border:1px solid #e4e7ec;border-radius:14px;padding:12px;margin-top:10px;white-space:pre-line}
+  .chatBox{display:flex;flex-direction:column;padding:0;overflow:hidden}.chatHead{padding:16px 18px;border-bottom:1px solid #e5e7eb;background:white}
+  .chatHead h2{margin:0;font-size:22px}.chatHead p{margin:5px 0 0;color:var(--muted);font-size:14px}
+  #chat{flex:1;padding:16px;overflow:auto;background:linear-gradient(#f8fbff,#eef5ff)}
+  .msg{max-width:82%;padding:13px 15px;border-radius:18px;margin:10px 0;line-height:1.55;box-shadow:0 3px 10px rgba(10,40,90,.07)}
+  .me{margin-left:auto;background:#1f5fbf;color:white;border-bottom-right-radius:5px}.ai{background:white;border:1px solid #e5e7eb;border-bottom-left-radius:5px}
+  .inputRow{display:flex;gap:10px;padding:13px;background:white;border-top:1px solid #e5e7eb}
+  input{flex:1;padding:14px 15px;border:2px solid #d5e3f7;border-radius:16px;font-size:16px}button{border:0;border-radius:16px;padding:13px 16px;font-weight:800;cursor:pointer}
+  .send{background:var(--blue);color:white}.send:hover{filter:brightness(.95)}
+  .quick{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}.quick button{text-align:left;background:#f1f7ff;color:#123f8c;border:2px solid #d6e8ff}.quick button:hover{background:#e7f1ff}
+  .signalButtons{display:grid;grid-template-columns:1fr;gap:9px;margin-top:10px}.g{background:#dcfce7;color:#166534}.y{background:#fef9c3;color:#854d0e}.r{background:#fee2e2;color:#991b1b}.n{background:#f1f5f9;color:#334155}
+  .card{background:#f8fafc;border:1px solid #e4e7ec;border-radius:17px;padding:13px;margin:12px 0}.card b{display:block;margin-bottom:6px}.small{font-size:13px;color:#667085;line-height:1.45}.cultureTip{font-size:14px;line-height:1.55}.pill{display:inline-block;border-radius:999px;padding:5px 9px;margin:3px;background:#e0f2fe;color:#075985;font-size:12px;font-weight:700}
+  @media(max-width:950px){.layout{grid-template-columns:1fr;height:auto}.panel{order:0}.chatBox{min-height:560px}}
+</style>
+</head>
+<body>
+<header>
+  <div style="font-size:38px">🌍</div>
+  <div><h1>Peace Talk</h1><p>나라별 대화 문화에 맞춰 좋은 말·위험한 말·나쁜 말을 구분하는 데모</p></div>
+</header>
+
+<div class="layout">
+  <aside class="panel">
+    <h2>🌐 나라 선택</h2>
+    <div class="label">말하는 사람</div>
+    <select id="fromCountry">
+      <option value="ko">🇰🇷 한국</option><option value="en">🇺🇸 미국</option><option value="ja">🇯🇵 일본</option>
+      <option value="fr">🇫🇷 프랑스</option><option value="zh">🇨🇳 중국</option><option value="es">🇪🇸 스페인</option>
+    </select>
+    <div class="label">상대 나라</div>
+    <select id="toCountry">
+      <option value="en">🇺🇸 미국</option><option value="ko">🇰🇷 한국</option><option value="ja">🇯🇵 일본</option>
+      <option value="fr">🇫🇷 프랑스</option><option value="zh">🇨🇳 중국</option><option value="es">🇪🇸 스페인</option>
+    </select>
+    <div class="card"><b>🔐 안전 대화방</b><span class="small">욕설/비난은 빨강, 강한 요구는 노랑, 존중/협력 표현은 초록으로 표시합니다.</span></div>
+    <div class="card"><b>🎛 아두이노 연결</b><span class="small">초록=좋은 소리, 노랑=위험 신호음, 빨강=위험 경고음으로 시연하면 됩니다.</span></div>
+  </aside>
+
+  <main class="chatBox">
+    <div class="chatHead"><h2>💬 문화 맞춤 메신저</h2><p>문장을 입력하거나 예시 버튼을 눌러보세요.</p></div>
+    <div id="chat"><div class="msg ai">🤖 안녕하세요! 나라를 선택하고 문장을 보내면 Peace Talk가 대화 신호를 보여줍니다.</div></div>
+    <div class="inputRow"><input id="textInput" placeholder="예: 우리 함께 해결 방법을 찾아보자" autocomplete="off"/><button id="sendBtn" class="send">전송</button></div>
+  </main>
+
+  <aside class="panel">
+    <div class="status" id="statusBox"><div class="badge" id="resultLabel">대기 중</div><div class="light" id="light">⚪</div><div class="small" id="soundLabel">문장을 보내면 신호가 나옵니다.</div></div>
+    <div class="reason" id="reason">판정 근거가 여기에 표시됩니다.</div>
+    <div class="card"><b>⚡ 예시 문장</b><div class="quick">
+      <button id="goodExample">🟢 좋은 말 예시 넣기</button>
+      <button id="riskExample">🟡 위험한 말 예시 넣기</button>
+      <button id="badExample">🔴 나쁜 말 예시 넣기</button>
+      <button id="neutralExample">⚪ 중립 말 예시 넣기</button>
+    </div></div>
+    <div class="card"><b>🔊 소리 테스트</b><p class="small" id="audioStatus">먼저 아래 버튼을 눌러 소리를 켜세요.</p><button id="enableSound" class="send" style="width:100%;margin:8px 0">🔊 소리 켜기</button><div class="signalButtons">
+      <button class="g" id="soundGood">🟢 좋은 신호</button>
+      <button class="n" id="soundNeutral">⚪ 중립 신호</button>
+      <button class="y" id="soundRisk">🟡 위험 신호</button>
+      <button class="r" id="soundBad">🔴 경고 신호</button>
+    </div></div>
+    <div class="card"><b>🧭 상대 나라 문화 팁</b><div class="cultureTip" id="cultureTip"></div></div>
+    <div class="card"><b>🌱 좋은 말 카드</b><div id="goodCards"></div></div>
+  </aside>
+</div>
+
+<script>
+(function(){
+const countryNames={ko:'한국',en:'미국',ja:'일본',fr:'프랑스',zh:'중국',es:'스페인'};
+const flags={ko:'🇰🇷',en:'🇺🇸',ja:'🇯🇵',fr:'🇫🇷',zh:'🇨🇳',es:'🇪🇸'};
+const tips={
+  ko:'한국어 대화에서는 존댓말, 사과와 양해, 함께 해결하자는 표현이 안전합니다.',
+  en:'미국식 대화에서는 개인 의견을 존중하고 “I think / I feel”처럼 자기 관점으로 말하면 좋습니다.',
+  ja:'일본어 대화에서는 직접 단정하기보다 정중하고 완곡하게 묻는 표현이 좋습니다.',
+  fr:'프랑스어 대화에서는 의견 차이를 인정하고, 사람을 공격하지 않는 논리적 대화가 좋습니다.',
+  zh:'중국어 대화에서는 상대의 체면을 세워주고 공개적 비난을 피하는 표현이 좋습니다.',
+  es:'스페인어 대화에서는 따뜻하고 친근하게, 함께 이야기하자는 표현이 좋습니다.'
+};
+const suggestions={
+  ko:'서로의 입장을 존중하면서 함께 해결 방법을 찾아보면 좋겠습니다.',
+  en:'I respect your opinion. Let’s listen to each other and find a solution together.',
+  ja:'お互いの考えを尊重しながら、一緒に解決方法を考えたいです。',
+  fr:'Je respecte votre point de vue. Cherchons une solution ensemble.',
+  zh:'我尊重你的想法。我们一起听听彼此的意见，寻找解决办法吧。',
+  es:'Respeto tu opinión. Hablemos y busquemos una solución juntos.'
+};
+const goodCards={
+  ko:['의견을 듣고 싶어요','함께 해결해요','서로 존중해요'],
+  en:['I respect your opinion','Let’s solve this together','I want to understand you'],
+  ja:['ご意見を聞きたいです','一緒に考えたいです','お互いを尊重しましょう'],
+  fr:['Je respecte votre avis','Cherchons une solution','Je veux vous comprendre'],
+  zh:['我想听你的意见','我们一起解决吧','我尊重你的想法'],
+  es:['Respeto tu opinión','Busquemos una solución','Quiero entenderte']
+};
+const examples={
+  ko:{good:'우리 함께 해결 방법을 찾아보자',risk:'먼저 사과해 주세요',bad:'너희가 잘못했잖아',neutral:'오늘 회의는 몇 시야?'},
+  en:{good:'I want to understand your opinion',risk:'You must apologize first',bad:'This is all your fault',neutral:'What time is the meeting today?'},
+  ja:{good:'あなたの意見を聞きたいです',risk:'先に謝ってください',bad:'全部あなたのせいです',neutral:'今日の会議は何時ですか'},
+  fr:{good:'Je veux comprendre votre opinion',risk:'Vous devez vous excuser d’abord',bad:'Tout est de votre faute',neutral:'À quelle heure est la réunion?'},
+  zh:{good:'我想听你的意见',risk:'你必须先道歉',bad:'都是你的错',neutral:'今天会议几点开始？'},
+  es:{good:'Quiero entender tu opinión',risk:'Tienes que disculparte primero',bad:'Todo es tu culpa',neutral:'¿A qué hora es la reunión?'}
+};
+function escRe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function normalize(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/[.,!?;:~`"'“”‘’、。！？¿¡，；：\-_/\\()[\]{}]/g,' ').replace(/\s+/g,' ').trim();}
+function compact(s){return normalize(s).replace(/\s+/g,'');}
+function hasAny(txt,arr){return arr.some(w=>txt.includes(normalize(w)));}
+function hasPattern(raw,arr){return arr.some(p=>p.test(raw));}
+const dict={
+  ko:{
+    bad:['바보','멍청','멍청이','한심','쓰레기','꺼져','닥쳐','시끄러워','싫어','미워','역겨워','재수없어','네 탓','너 때문','너희 탓','잘못했잖아','너희가 문제','말하기 싫어','상대하기 싫어','공격하겠다','죽어','사라져','꺼져버려'],
+    risk:['사과해','사과하세요','책임져','책임지세요','인정해','인정하세요','네가 먼저','너희가 먼저','당장 해','무조건 해','반드시 해','내 말대로 해','틀렸어','너는 틀렸어'],
+    good:['사랑해','좋아해','고마워','감사','감사합니다','존중','존중해','이해하고 싶','이해해','의견을 듣고 싶','함께 해결','같이 해결','대화하자','평화롭게','협력','미안','죄송','양해','괜찮아','응원해','도와줄게','같이 해보자','서로 이해']
+  },
+  en:{
+    bad:['idiot','stupid','dumb','fool','moron','trash','garbage','shut up','go away','get lost','i hate you','your fault','all your fault','you are wrong','you are the problem','your country is the problem','i do not want to talk to you','attack you','damn you'],
+    risk:['you must','you have to','apologize first','take responsibility','admit it','do it now','you should apologize','you need to admit','you are completely wrong','always your fault','never listen'],
+    good:['i love you','love you','thank you','thanks','i appreciate','respect','i respect','understand your opinion','i understand','listen to your opinion','i want to listen','solve this together','work together','talk together','i feel','i think','sorry','i am sorry','peace','cooperate','support you','let us talk','let’s talk']
+  },
+  ja:{
+    bad:['ばか','バカ','馬鹿','あほ','アホ','まぬけ','間抜け','クズ','くず','最低','嫌い','大嫌い','消えろ','黙れ','死ね','くそ','クソ','お前のせい','あなたのせい','全部あなたのせい','全部お前のせい','君たちが悪い','あなたたちが悪い','話したくない','二度と話したくない'],
+    risk:['謝ってください','先に謝って','謝れ','責任を取って','認めてください','認めろ','今すぐ','絶対に','あなたが先に','お前が先に','間違っています','あなたは間違っています'],
+    good:['愛してる','好きです','ありがとう','ありがとうございます','感謝','尊重','尊重します','意見を聞きたい','お話を聞きたい','理解したい','一緒に解決','一緒に考えたい','話し合い','すみません','申し訳ありません','ごめんなさい','お互い','平和','協力','応援しています']
+  },
+  fr:{
+    bad:['putain','pute','merde','connard','connasse','con','conne','imbecile','imbécile','idiot','stupide','cretin','crétin','nul','tais toi','tais-toi','ta gueule','ferme ta gueule','va t en','va-t’en','degage','dégage','je te deteste','je te déteste','je vous deteste','je vous déteste','c est ta faute','c’est ta faute','tout est de ta faute','tout est de votre faute','votre pays est le probleme','votre pays est le problème','tu as tort'],
+    risk:['vous devez','tu dois','excusez vous','excusez-vous','excuse toi','excuse-toi','assumez la responsabilite','assumez la responsabilité','prends tes responsabilites','reconnais le','reconnais-le','immediatement','immédiatement','tout de suite','tu dois admettre'],
+    good:['je t aime','je t’aime','merci','merci beaucoup','je respecte','respecte votre avis','je respecte votre avis','je respecte ton avis','comprendre votre opinion','comprendre ton opinion','ecouter votre avis','écouter votre avis','cherchons une solution','trouvons une solution','ensemble','discutons','parlons ensemble','je suis desole','je suis désolé','desole','désolé','pardon','paix','cooperer','coopérer']
+  },
+  zh:{
+    bad:['笨蛋','傻瓜','白痴','蠢货','蠢','垃圾','混蛋','滚','滚开','闭嘴','閉嘴','去死','讨厌你','討厭你','都是你的错','都是你的錯','都是你们的错','都是你們的錯','你的错','你的錯','你们的错','你們的錯','你们国家有问题','你們國家有問題','你们国家的问题','你們國家的問題','我不想跟你说话','我不想和你说话','我不想跟你說話','你错了','你錯了','丢脸','丟臉'],
+    risk:['你必须','你必須','你应该先道歉','你應該先道歉','先道歉','负责任','負責任','承担责任','承擔責任','承认吧','承認吧','马上','馬上','必须道歉','必須道歉','你要承认'],
+    good:['我爱你','我愛你','爱你','愛你','喜欢你','喜歡你','谢谢','謝謝','感谢','感謝','尊重','我尊重','我想听你的意见','我想聽你的意見','我想理解你','我想了解你','一起解决','一起解決','一起想办法','一起想辦法','好好谈谈','好好談談','对不起','對不起','抱歉','互相理解','和平','合作','支持你']
+  },
+  es:{
+    bad:['idiota','estupido','estúpido','tonto','imbecil','imbécil','gilipollas','pendejo','mierda','joder','puta','puto','maldito','maldita','basura','callate','cállate','vete','vete a la mierda','te odio','es tu culpa','todo es tu culpa','ustedes tienen la culpa','tu pais es el problema','tu país es el problema','no quiero hablar contigo','estas equivocado','estás equivocado','eres el problema'],
+    risk:['tienes que','debes','disculpate','discúlpate','pide perdon','pide perdón','asume la responsabilidad','admitelo','admítelo','ahora mismo','primero disculpate','primero discúlpate','tienes que admitir','estas totalmente equivocado'],
+    good:['te quiero','te amo','gracias','muchas gracias','respeto','respeto tu opinion','respeto tu opinión','quiero entender','quiero escucharte','quiero escuchar','busquemos una solucion','busquemos una solución','resolvamos juntos','hablemos','hablemos juntos','lo siento','perdon','perdón','paz','cooperar','apoyarte','juntos']
+  }
+};
+
+const extraBadRegex={
+  ko:[/씨발|시발|ㅅㅂ|병신|ㅂㅅ|개새끼|개새|새끼|좆|존나|꺼져|닥쳐|미친|바보|멍청|죽어|사라져|네\s*탓|너\s*때문|너희\s*나라.*문제/],
+  en:[/idiot|stupid|dumb|moron|fool|trash|garbage|shut\s*up|go\s*away|get\s*lost|hate\s*you|fuck|shit|damn\s*you|your\s*fault|all\s*your\s*fault|wrong\s*with\s*you|your\s*country\s*is\s*the\s*problem/],
+  ja:[/ばか|バカ|馬鹿|あほ|アホ|死ね|消えろ|黙れ|くそ|クソ|嫌い|大嫌い|最低|クズ|くず|あなたのせい|お前のせい|全部.*せい|話したくない/],
+  fr:[/putain|pute|merde|connard|connasse|\bcon\b|\bconne\b|stupide|imb[eé]cile|cr[eé]tin|tais\s*toi|ta\s*gueule|ferme\s*ta\s*gueule|va\s*t\s*en|d[eé]gage|d[eé]teste|c\s*est\s*ta\s*faute|tout\s*est\s*de\s*(ta|votre)\s*faute|votre\s*pays\s*est\s*le\s*probleme/],
+  zh:[/笨蛋|傻瓜|白痴|蠢货|蠢貨|混蛋|垃圾|滚|滾|闭嘴|閉嘴|去死|讨厌你|討厭你|都是.*错|都是.*錯|你的错|你的錯|你们的错|你們的錯|国家.*有问题|國家.*有問題|不想.*说话|不想.*說話|丢脸|丟臉/],
+  es:[/idiota|est[uú]pido|tonto|imb[eé]cil|gilipollas|pendejo|mierda|joder|puta|puto|maldit[oa]|basura|c[aá]llate|vete|vete\s*a\s*la\s*mierda|te\s*odio|tu\s*culpa|todo\s*es\s*tu\s*culpa|tu\s*pais\s*es\s*el\s*problema|tu\s*pa[ií]s\s*es\s*el\s*problema|no\s*quiero\s*hablar\s*contigo/]
+};
+const extraGoodRegex={
+  ko:[/사랑해|좋아해|고마워|감사|존중|함께|같이|이해|의견.*듣|해결|미안|죄송|평화|협력|응원|도와줄게|괜찮아/],
+  en:[/love\s*you|thank|thanks|appreciate|respect|understand|listen|together|solve|solution|sorry|peace|cooperate|support\s*you|let\s*us\s*talk|let'?s\s*talk/],
+  ja:[/愛してる|好き|ありがとう|感謝|尊重|理解|一緒|解決|聞きたい|すみません|ごめん|申し訳|平和|協力|応援|お互い/],
+  fr:[/je\s*t[’']?aime|merci|respecte|comprendre|[eé]couter|ensemble|solution|cherchons|trouvons|d[eé]sol[eé]|pardon|paix|coop[eé]rer|parlons/],
+  zh:[/谢谢|謝謝|感谢|感謝|我爱你|我愛你|爱你|愛你|喜欢你|喜歡你|尊重|理解|听.*意见|聽.*意見|一起|解决|解決|对不起|對不起|抱歉|和平|合作|支持/],
+  es:[/gracias|te\s*quiero|te\s*amo|respeto|entiendo|entender|escuchar|juntos|soluci[oó]n|perd[oó]n|lo\s*siento|paz|cooperar|apoyar|hablemos/]
+};
+function hasRegexText(raw,norm,comp,arr){return (arr||[]).some(re=>re.test(raw)||re.test(norm)||re.test(comp));}
+
+const cultureGood={
+  ko:['부탁','괜찮으시다면','함께','서로','존중','이야기 나누'],
+  en:['i think','i feel','i understand','i respect','could we','can we','together'],
+  ja:['です','ます','いただけますか','よろしければ','一緒に','お互い','聞きたい'],
+  fr:['je pense','je comprends','je respecte','pourrions-nous','ensemble','discuter'],
+  zh:['一起','互相','尊重','听听','理解','商量','解决'],
+  es:['podemos','juntos','entiendo','respeto','hablemos','solución','escuchar']
+};
+const cultureRisk={
+  ko:['야 ','해라','무조건','당장'],en:['you people','always','never','obviously'],ja:['違う','だめ','無理','絶対'],fr:['évidemment','jamais','toujours'],zh:['丢脸','没面子','公开道歉'],es:['siempre','nunca','obviamente']
+};
+function scriptLang(s){if(/[\u4e00-\u9fff]/.test(s))return 'zh'; if(/[\u3040-\u30ff]/.test(s))return 'ja'; if(/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(s))return 'ko'; if(/[¿¡ñáéíóúü]/i.test(s))return 'es'; if(/[àâçéèêëîïôùûüÿœæ]/i.test(s))return 'fr'; return 'en';}
+function analyze(text){
+  const from=document.getElementById('fromCountry').value;
+  const to=document.getElementById('toCountry').value;
+  const raw=text.trim(); const norm=normalize(raw); const comp=compact(raw); const detected=scriptLang(raw);
+  const order=[from,detected,'ko','en','ja','fr','zh','es'].filter((v,i,a)=>v&&a.indexOf(v)===i);
+  // 1. 욕/모욕/비난 최우선: 어떤 언어에서든 잡히면 빨강
+  for(const lang of order){const d=dict[lang]; if(!d)continue; if(hasAny(norm,d.bad)||hasAny(comp,d.bad.map(x=>x.replace(/\s+/g,'')))||hasRegexText(raw,norm,comp,extraBadRegex[lang])) return result('bad',lang,`욕설/모욕/비난 표현 감지 (${countryNames[lang]} 사전)`);}
+  // 2. 위험: 강요/명령/문화적 주의 표현
+  for(const lang of order){const d=dict[lang]; if(!d)continue; if(hasAny(norm,d.risk)||hasAny(comp,d.risk.map(x=>x.replace(/\s+/g,'')))) return result('risk',lang,`강한 요구/명령 표현 감지 (${countryNames[lang]} 사전)`);}
+  if(hasAny(norm,cultureRisk[to]||[])||hasAny(comp,(cultureRisk[to]||[]).map(x=>x.replace(/\s+/g,'')))) return result('risk',to,`${countryNames[to]} 문화 기준: 조심이 필요한 표현`);
+  // 3. 좋은 말: 언어별 + 상대 문화 기준
+  for(const lang of order){const d=dict[lang]; if(!d)continue; if(hasAny(norm,d.good)||hasAny(comp,d.good.map(x=>x.replace(/\s+/g,'')))||hasRegexText(raw,norm,comp,extraGoodRegex[lang])) return result('good',lang,`존중/이해/호의 표현 감지 (${countryNames[lang]} 사전)`);}
+  if(hasAny(norm,cultureGood[to]||[])||hasAny(comp,(cultureGood[to]||[]).map(x=>x.replace(/\s+/g,'')))) return result('good',to,`${countryNames[to]} 문화 기준: 긍정적인 대화 표현`);
+  return result('neutral',detected,`공격/강요/협력 표현이 뚜렷하지 않은 일반 문장`);
+}
+function result(type,lang,reason){return {type,lang,reason};}
+function typeInfo(type){return {good:['🟢 좋은 말','🟢','좋은 신호음'],risk:['🟡 위험한 말','🟡','위험 신호음'],bad:['🔴 나쁜 말','🔴','강한 경고음'],neutral:['⚪ 중립 말','⚪','중립 신호음']}[type];}
+let audioCtx=null;
+let audioReady=false;
+function setAudioStatus(msg, ok=false){
+  const el=document.getElementById('audioStatus');
+  if(el){el.textContent=msg; el.style.color=ok?'#166534':'#b45309';}
+}
+async function ensureAudio(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC){setAudioStatus('이 브라우저는 소리 기능을 지원하지 않습니다. 다른 브라우저로 열어보세요.'); return false;}
+    if(!audioCtx) audioCtx=new AC();
+    if(audioCtx.state==='suspended') await audioCtx.resume();
+    audioReady=(audioCtx.state==='running');
+    setAudioStatus(audioReady?'소리 켜짐: 이제 신호음이 나옵니다.':'소리 준비 중입니다. 다시 한 번 눌러보세요.', audioReady);
+    return audioReady;
+  }catch(e){
+    setAudioStatus('소리를 켜지 못했습니다. 브라우저 소리 권한/음소거를 확인하세요.');
+    return false;
+  }
+}
+function toneAt(freq,dur,startOffset=0,vol=.2,type='sine'){
+  if(!audioCtx || audioCtx.state!=='running') return;
+  const now=audioCtx.currentTime;
+  const o=audioCtx.createOscillator();
+  const g=audioCtx.createGain();
+  o.type=type;
+  o.frequency.setValueAtTime(freq, now+startOffset);
+  g.gain.setValueAtTime(0.0001, now+startOffset);
+  g.gain.exponentialRampToValueAtTime(vol, now+startOffset+0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, now+startOffset+dur/1000);
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.start(now+startOffset);
+  o.stop(now+startOffset+dur/1000+0.03);
+}
+async function playSound(type){
+  const ok=await ensureAudio();
+  if(!ok) return;
+  // 🟢 좋은 말: 밝게 올라가는 3음
+  if(type==='good'){
+    toneAt(660,160,0,.22,'sine');
+    toneAt(880,170,.18,.22,'sine');
+    toneAt(1046,190,.38,.20,'sine');
+  }
+  // ⚪ 중립 말: 짧고 부드러운 확인음
+  else if(type==='neutral'){
+    toneAt(523,140,0,.13,'sine');
+  }
+  // 🟡 위험한 말: 두 번 반복되는 주의 신호
+  else if(type==='risk'){
+    toneAt(520,180,0,.24,'triangle');
+    toneAt(520,180,.28,.24,'triangle');
+  }
+  // 🔴 나쁜 말: 낮고 강한 경고음 3번
+  else if(type==='bad'){
+    toneAt(220,220,0,.34,'square');
+    toneAt(180,220,.28,.34,'square');
+    toneAt(220,260,.56,.34,'square');
+  }
+}
+function updateStatus(res){const [label,light,sound]=typeInfo(res.type); document.getElementById('resultLabel').textContent=label; document.getElementById('light').textContent=light; document.getElementById('soundLabel').textContent=sound; document.getElementById('reason').textContent=res.reason; const box=document.getElementById('statusBox'); box.style.borderColor=res.type==='good'?'#22c55e':res.type==='risk'?'#facc15':res.type==='bad'?'#ef4444':'#cbd5e1'; box.style.background=res.type==='good'?'#f0fdf4':res.type==='risk'?'#fefce8':res.type==='bad'?'#fef2f2':'#f8fafc';}
+function addMsg(cls,html){const div=document.createElement('div'); div.className='msg '+cls; div.innerHTML=html; document.getElementById('chat').appendChild(div); document.getElementById('chat').scrollTop=document.getElementById('chat').scrollHeight;}
+function send(){const inp=document.getElementById('textInput'); const text=inp.value.trim(); if(!text)return; ensureAudio(); const to=document.getElementById('toCountry').value; const res=analyze(text); updateStatus(res); playSound(res.type); addMsg('me',text.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))); const label=typeInfo(res.type)[0]; addMsg('ai',`<b>${label}</b><br>${res.reason}<br><br><b>${flags[to]} ${countryNames[to]} 문화 맞춤 표현</b><br>${suggestions[to]}`); inp.value='';}
+function refreshCulture(){const to=document.getElementById('toCountry').value; document.getElementById('cultureTip').textContent=tips[to]; document.getElementById('goodCards').innerHTML=(goodCards[to]||[]).map(x=>`<span class="pill">${x}</span>`).join('');}
+function setExample(kind){const from=document.getElementById('fromCountry').value; document.getElementById('textInput').value=examples[from][kind]; document.getElementById('textInput').focus();}
+document.getElementById('sendBtn').addEventListener('click',send);
+document.getElementById('textInput').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+document.getElementById('goodExample').addEventListener('click',()=>setExample('good'));
+document.getElementById('riskExample').addEventListener('click',()=>setExample('risk'));
+document.getElementById('badExample').addEventListener('click',()=>setExample('bad'));
+document.getElementById('neutralExample').addEventListener('click',()=>setExample('neutral'));
+document.getElementById('enableSound').addEventListener('click',async()=>{await ensureAudio(); toneAt(880,120,0,.18,'sine');});
+document.getElementById('soundGood').addEventListener('click',()=>playSound('good'));
+document.getElementById('soundNeutral').addEventListener('click',()=>playSound('neutral'));
+document.getElementById('soundRisk').addEventListener('click',()=>playSound('risk'));
+document.getElementById('soundBad').addEventListener('click',()=>playSound('bad'));
+document.getElementById('toCountry').addEventListener('change',refreshCulture);
+document.getElementById('fromCountry').addEventListener('change',()=>setExample('good'));
+refreshCulture();
+})();
+</script>
+</body>
+</html>
