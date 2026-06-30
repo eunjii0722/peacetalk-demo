@@ -38,6 +38,7 @@
   .signalButtons{display:grid;grid-template-columns:1fr;gap:9px;margin-top:10px}.g{background:#dcfce7;color:#166534}.y{background:#fef9c3;color:#854d0e}.r{background:#fee2e2;color:#991b1b}.n{background:#f1f5f9;color:#334155}
   .ttsBtn{margin-top:10px;background:#e0f2fe;color:#075985;border:2px solid #bae6fd;padding:10px 12px;border-radius:13px;font-size:14px}.ttsBtn:hover{background:#bae6fd}.ttsRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
   .card{background:#f8fafc;border:1px solid #e4e7ec;border-radius:17px;padding:13px;margin:12px 0}.card b{display:block;margin-bottom:6px}.small{font-size:13px;color:#667085;line-height:1.45}.cultureTip{font-size:14px;line-height:1.55}.pill{display:inline-block;border-radius:999px;padding:5px 9px;margin:3px;background:#e0f2fe;color:#075985;font-size:12px;font-weight:700}
+  .meaningBox{margin-top:10px;padding:11px 12px;border-radius:14px;background:#f8fafc;border:1px dashed #cbd5e1;color:#344054;font-size:14px;line-height:1.5}.meaningBox b{display:inline;margin:0;color:#1f5fbf}
   @media(max-width:950px){.layout{grid-template-columns:1fr;height:auto}.panel{order:0}.chatBox{min-height:560px}}
 </style>
 </head>
@@ -128,6 +129,19 @@ const suggestions={
   es:'Respeto tu opinión. Hablemos y busquemos una solución juntos.'
 };
 const speechLang={ko:'ko-KR',en:'en-US',ja:'ja-JP',fr:'fr-FR',zh:'zh-CN',es:'es-ES'};
+
+const suggestionMeaning={
+  ko:'상대의 의견을 존중하고, 서로의 말을 들으면서 함께 해결 방법을 찾자는 뜻입니다.',
+  en:'It means: I respect your opinion, let’s listen to each other, and find a solution together.',
+  ja:'相手の意見を尊重し、お互いの話を聞きながら、一緒に解決方法を探そうという意味です。',
+  fr:'Cela signifie : je respecte votre opinion, écoutons-nous et cherchons une solution ensemble.',
+  zh:'意思是：我尊重你的意见，让我们互相倾听，一起寻找解决办法。',
+  es:'Significa: respeto tu opinión, escuchémonos y busquemos una solución juntos.'
+};
+function escapeHtml(text){
+  return String(text||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
 let latestSuggestion='';
 let latestSuggestionLang='en-US';
 function setTtsStatus(msg, ok=false){
@@ -362,7 +376,27 @@ function updateFlowMonitor(type){
 }
 function updateStatus(res){const [label,light,sound]=typeInfo(res.type); document.getElementById('resultLabel').textContent=label; document.getElementById('light').textContent=light; document.getElementById('soundLabel').textContent=sound; document.getElementById('reason').textContent=res.reason; const box=document.getElementById('statusBox'); box.style.borderColor=res.type==='good'?'#22c55e':res.type==='risk'?'#facc15':res.type==='bad'?'#ef4444':'#cbd5e1'; box.style.background=res.type==='good'?'#f0fdf4':res.type==='risk'?'#fefce8':res.type==='bad'?'#fef2f2':'#f8fafc';}
 function addMsg(cls,html){const div=document.createElement('div'); div.className='msg '+cls; div.innerHTML=html; document.getElementById('chat').appendChild(div); document.getElementById('chat').scrollTop=document.getElementById('chat').scrollHeight;}
-function send(){const inp=document.getElementById('textInput'); const text=inp.value.trim(); if(!text)return; ensureAudio(); const to=document.getElementById('toCountry').value; const res=analyze(text); updateStatus(res); updateFlowMonitor(res.type); playSound(res.type); addMsg('me',text.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))); const label=typeInfo(res.type)[0]; latestSuggestion=suggestions[to]; latestSuggestionLang=speechLang[to]||'en-US'; const safeSuggestion=latestSuggestion.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); addMsg('ai',`<b>${label}</b><br>${res.reason}<br><br><b>${flags[to]} ${countryNames[to]} 문화 맞춤 표현</b><br>${safeSuggestion}<br><button class="ttsBtn speakSuggestion" data-lang="${latestSuggestionLang}" data-text="${safeSuggestion}">🔈 맞춤 표현 읽기</button>`); inp.value='';}
+function send(){
+  const inp=document.getElementById('textInput');
+  const text=inp.value.trim();
+  if(!text)return;
+  ensureAudio();
+  const from=document.getElementById('fromCountry').value;
+  const to=document.getElementById('toCountry').value;
+  const res=analyze(text);
+  updateStatus(res);
+  updateFlowMonitor(res.type);
+  playSound(res.type);
+  addMsg('me',escapeHtml(text));
+  const label=typeInfo(res.type)[0];
+  latestSuggestion=suggestions[to];
+  latestSuggestionLang=speechLang[to]||'en-US';
+  const safeSuggestion=escapeHtml(latestSuggestion);
+  const meaning=suggestionMeaning[from]||suggestionMeaning.ko;
+  const safeMeaning=escapeHtml(meaning);
+  addMsg('ai',`<b>${label}</b><br>${escapeHtml(res.reason)}<br><br><b>${flags[to]} ${countryNames[to]} 문화 맞춤 표현</b><br>${safeSuggestion}<div class="meaningBox"><b>${flags[from]} ${countryNames[from]}어 해석</b><br>${safeMeaning}</div><button class="ttsBtn speakSuggestion" data-lang="${latestSuggestionLang}" data-text="${safeSuggestion}">🔈 맞춤 표현 읽기</button>`);
+  inp.value='';
+}
 function refreshCulture(){const to=document.getElementById('toCountry').value; document.getElementById('cultureTip').textContent=tips[to]; document.getElementById('goodCards').innerHTML=(goodCards[to]||[]).map(x=>`<span class="pill">${x}</span>`).join('');}
 function setExample(kind){const from=document.getElementById('fromCountry').value; document.getElementById('textInput').value=examples[from][kind]; document.getElementById('textInput').focus();}
 document.getElementById('sendBtn').addEventListener('click',send);
