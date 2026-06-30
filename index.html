@@ -36,6 +36,7 @@
   .send{background:var(--blue);color:white}.send:hover{filter:brightness(.95)}
   .quick{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}.quick button{text-align:left;background:#f1f7ff;color:#123f8c;border:2px solid #d6e8ff}.quick button:hover{background:#e7f1ff}
   .signalButtons{display:grid;grid-template-columns:1fr;gap:9px;margin-top:10px}.g{background:#dcfce7;color:#166534}.y{background:#fef9c3;color:#854d0e}.r{background:#fee2e2;color:#991b1b}.n{background:#f1f5f9;color:#334155}
+  .ttsBtn{margin-top:10px;background:#e0f2fe;color:#075985;border:2px solid #bae6fd;padding:10px 12px;border-radius:13px;font-size:14px}.ttsBtn:hover{background:#bae6fd}.ttsRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
   .card{background:#f8fafc;border:1px solid #e4e7ec;border-radius:17px;padding:13px;margin:12px 0}.card b{display:block;margin-bottom:6px}.small{font-size:13px;color:#667085;line-height:1.45}.cultureTip{font-size:14px;line-height:1.55}.pill{display:inline-block;border-radius:999px;padding:5px 9px;margin:3px;background:#e0f2fe;color:#075985;font-size:12px;font-weight:700}
   @media(max-width:950px){.layout{grid-template-columns:1fr;height:auto}.panel{order:0}.chatBox{min-height:560px}}
 </style>
@@ -99,6 +100,7 @@
       <button class="y" id="soundRisk">🟡 위험 신호</button>
       <button class="r" id="soundBad">🔴 경고 신호</button>
     </div></div>
+    <div class="card"><b>🗣 맞춤 표현 음성</b><p class="small" id="ttsStatus">전송 후 채팅창의 “맞춤 표현 읽기” 버튼을 누르면 상대 나라 언어로 읽어줍니다.</p><div class="ttsRow"><button class="ttsBtn" id="readLatest">🔈 최근 맞춤 표현</button><button class="ttsBtn" id="stopTts">⏹ 읽기 중지</button></div></div>
     <div class="card"><b>🧭 상대 나라 문화 팁</b><div class="cultureTip" id="cultureTip"></div></div>
     <div class="card"><b>🌱 좋은 말 카드</b><div id="goodCards"></div></div>
   </aside>
@@ -125,6 +127,37 @@ const suggestions={
   zh:'我尊重你的想法。我们一起听听彼此的意见，寻找解决办法吧。',
   es:'Respeto tu opinión. Hablemos y busquemos una solución juntos.'
 };
+const speechLang={ko:'ko-KR',en:'en-US',ja:'ja-JP',fr:'fr-FR',zh:'zh-CN',es:'es-ES'};
+let latestSuggestion='';
+let latestSuggestionLang='en-US';
+function setTtsStatus(msg, ok=false){
+  const el=document.getElementById('ttsStatus');
+  if(el){el.textContent=msg; el.style.color=ok?'#166534':'#b45309';}
+}
+function stripHtml(s){
+  const div=document.createElement('div');
+  div.innerHTML=s||'';
+  return div.textContent||div.innerText||'';
+}
+function speakText(text, langCode){
+  const synth=window.speechSynthesis;
+  if(!synth){setTtsStatus('이 브라우저는 TTS 음성을 지원하지 않습니다. Chrome이나 Edge에서 열어보세요.'); return;}
+  const clean=stripHtml(text).trim();
+  if(!clean){setTtsStatus('읽을 맞춤 표현이 아직 없습니다. 먼저 문장을 전송해보세요.'); return;}
+  synth.cancel();
+  const u=new SpeechSynthesisUtterance(clean);
+  u.lang=langCode||latestSuggestionLang||'en-US';
+  u.rate=0.9;
+  u.pitch=1.0;
+  u.volume=1.0;
+  const voices=synth.getVoices();
+  const matched=voices.find(v=>v.lang && v.lang.toLowerCase().startsWith((u.lang||'').slice(0,2).toLowerCase()));
+  if(matched) u.voice=matched;
+  u.onstart=()=>setTtsStatus('맞춤 표현을 읽는 중입니다.', true);
+  u.onend=()=>setTtsStatus('읽기 완료. 다시 들으려면 버튼을 눌러주세요.', true);
+  u.onerror=()=>setTtsStatus('음성을 재생하지 못했습니다. 브라우저/기기 음성 설정을 확인해주세요.');
+  synth.speak(u);
+}
 const goodCards={
   ko:['의견을 듣고 싶어요','함께 해결해요','서로 존중해요'],
   en:['I respect your opinion','Let’s solve this together','I want to understand you'],
@@ -329,7 +362,7 @@ function updateFlowMonitor(type){
 }
 function updateStatus(res){const [label,light,sound]=typeInfo(res.type); document.getElementById('resultLabel').textContent=label; document.getElementById('light').textContent=light; document.getElementById('soundLabel').textContent=sound; document.getElementById('reason').textContent=res.reason; const box=document.getElementById('statusBox'); box.style.borderColor=res.type==='good'?'#22c55e':res.type==='risk'?'#facc15':res.type==='bad'?'#ef4444':'#cbd5e1'; box.style.background=res.type==='good'?'#f0fdf4':res.type==='risk'?'#fefce8':res.type==='bad'?'#fef2f2':'#f8fafc';}
 function addMsg(cls,html){const div=document.createElement('div'); div.className='msg '+cls; div.innerHTML=html; document.getElementById('chat').appendChild(div); document.getElementById('chat').scrollTop=document.getElementById('chat').scrollHeight;}
-function send(){const inp=document.getElementById('textInput'); const text=inp.value.trim(); if(!text)return; ensureAudio(); const to=document.getElementById('toCountry').value; const res=analyze(text); updateStatus(res); updateFlowMonitor(res.type); playSound(res.type); addMsg('me',text.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))); const label=typeInfo(res.type)[0]; addMsg('ai',`<b>${label}</b><br>${res.reason}<br><br><b>${flags[to]} ${countryNames[to]} 문화 맞춤 표현</b><br>${suggestions[to]}`); inp.value='';}
+function send(){const inp=document.getElementById('textInput'); const text=inp.value.trim(); if(!text)return; ensureAudio(); const to=document.getElementById('toCountry').value; const res=analyze(text); updateStatus(res); updateFlowMonitor(res.type); playSound(res.type); addMsg('me',text.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))); const label=typeInfo(res.type)[0]; latestSuggestion=suggestions[to]; latestSuggestionLang=speechLang[to]||'en-US'; const safeSuggestion=latestSuggestion.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); addMsg('ai',`<b>${label}</b><br>${res.reason}<br><br><b>${flags[to]} ${countryNames[to]} 문화 맞춤 표현</b><br>${safeSuggestion}<br><button class="ttsBtn speakSuggestion" data-lang="${latestSuggestionLang}" data-text="${safeSuggestion}">🔈 맞춤 표현 읽기</button>`); inp.value='';}
 function refreshCulture(){const to=document.getElementById('toCountry').value; document.getElementById('cultureTip').textContent=tips[to]; document.getElementById('goodCards').innerHTML=(goodCards[to]||[]).map(x=>`<span class="pill">${x}</span>`).join('');}
 function setExample(kind){const from=document.getElementById('fromCountry').value; document.getElementById('textInput').value=examples[from][kind]; document.getElementById('textInput').focus();}
 document.getElementById('sendBtn').addEventListener('click',send);
@@ -343,6 +376,10 @@ document.getElementById('soundGood').addEventListener('click',()=>playSound('goo
 document.getElementById('soundNeutral').addEventListener('click',()=>playSound('neutral'));
 document.getElementById('soundRisk').addEventListener('click',()=>playSound('risk'));
 document.getElementById('soundBad').addEventListener('click',()=>playSound('bad'));
+document.getElementById('readLatest').addEventListener('click',()=>speakText(latestSuggestion,latestSuggestionLang));
+document.getElementById('stopTts').addEventListener('click',()=>{if(window.speechSynthesis) window.speechSynthesis.cancel(); setTtsStatus('읽기를 중지했습니다.');});
+document.getElementById('chat').addEventListener('click',e=>{const btn=e.target.closest('.speakSuggestion'); if(btn) speakText(btn.dataset.text||'', btn.dataset.lang||latestSuggestionLang);});
+if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();}
 document.getElementById('toCountry').addEventListener('change',refreshCulture);
 document.getElementById('fromCountry').addEventListener('change',()=>setExample('good'));
 refreshCulture();
